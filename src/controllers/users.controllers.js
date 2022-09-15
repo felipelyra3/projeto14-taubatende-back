@@ -1,10 +1,16 @@
 import db from "../database/db.js";
 import Joi from "joi";
 import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from 'uuid';
 
 const usersSchema = Joi.object({
     name: Joi.string().min(3).max(24).empty().required(),
     avatar: Joi.string().uri().required(),
+    email: Joi.string().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } }).required(),
+    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required()
+});
+
+const usersLoginSchema = Joi.object({
     email: Joi.string().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } }).required(),
     password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required()
 });
@@ -31,7 +37,8 @@ async function SignUp(req, res) {
             name: req.body.name,
             avatar: req.body.avatar,
             email: req.body.email,
-            password: hashPassword
+            password: hashPassword,
+            cart: []
         };
         db.collection('users').insertOne(user);
         //res.send(user);
@@ -41,4 +48,26 @@ async function SignUp(req, res) {
     }
 }
 
-export { SignUp };
+async function Login(req, res) {
+    const user = await db.collection('users').findOne({ email: req.body.email });
+    if (!user) {
+        res.status(422).send('E-mail or password not found');
+        return;
+    }
+
+    try {
+        await usersLoginSchema.validateAsync(req.body);
+        const compare = bcrypt.compareSync(req.body.password, user.password);
+        if (compare) {
+            const token = uuidv4();
+            db.collection('sessions').insertOne({ userId: user._id, token: token, user: user.name });
+            res.status(200).send(token);
+        } else {
+            res.status(422).send(compare);
+        }
+    } catch (error) {
+        res.status(422).send(error.details.map((detail) => detail.message));
+    }
+}
+
+export { SignUp, Login };

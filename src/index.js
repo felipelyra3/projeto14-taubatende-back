@@ -4,7 +4,11 @@ import Joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from 'uuid';
 import db from "./database/db.js";
-import signup from "./routers/signup.routers.js";
+import signup from "./routers/signuplogin.routers.js";
+import login from "./routers/signuplogin.routers.js";
+import products from "./routers/products.routers.js";
+import addcart from "./routers/products.routers.js";
+import { ObjectId } from "mongodb";
 
 const server = express();
 const port = process.env.PORT || 5000;
@@ -13,38 +17,23 @@ server.use(cors());
 server.use(express.json());
 
 //Schemas
-const usersLoginSchema = Joi.object({
-    email: Joi.string().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } }).required(),
-    password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required()
-});
 
+////////// User Controllers //////////
 //SignUp
 server.use(signup);
 
 //Login
-server.post('/login', async (req, res) => {
-    const user = await db.collection('users').findOne({ email: req.body.email });
-    if (!user) {
-        res.status(422).send('E-mail or password not found');
-        return;
-    }
+server.use(login);
 
-    try {
-        await usersLoginSchema.validateAsync(req.body);
-        const compare = bcrypt.compareSync(req.body.password, user.password);
-        if (compare) {
-            const token = uuidv4();
-            db.collection('sessions').insertOne({ userId: user._id, token: token, user: user.name });
-            res.status(200).send(token);
-        } else {
-            res.status(422).send(compare);
-        }
-    } catch (error) {
-        res.status(422).send(error.details.map((detail) => detail.message));
-    }
-});
+////////// Products Controllers //////////
+//Get products
+server.use(products);
 
-server.get('/login', async (req, res) => {
+//Add to cart
+server.use(addcart);
+
+////////// Internal //////////
+server.get('/sessions', async (req, res) => {
     try {
         const search = await db.collection('sessions').find().toArray();
         res.send(search);
@@ -86,6 +75,46 @@ server.get("/maisvendidos", async (req, res) => {
     }
 })
 
+// Product Register //
+const productEntrySchema = Joi.object({
+    name: Joi.string().empty().required(),
+    description: Joi.string().empty().required(),
+    image: Joi.string().empty().uri().required(),
+    price: Joi.number().empty().required(),
+    type: Joi.string().empty().valid('fabric', 'plastic', 'gel', 'latex').required()
+});
+
+server.post('/products', async (req, res) => {
+    try {
+        const product = {
+            name: "Barriga em látex Premium Taubatende",
+            description: "Barriga falsa premium totalmente feita em látex com sensação de pele ao toque, na cor bege. Modelo T212",
+            image: "https://image.dhgate.com/0x0/f2/albu/g7/M00/EB/B1/rBVaSVripdSAQFnJAAEe0iY-JdA332.jpg",
+            price: 489.99,
+            type: "latex"
+        };
+        await productEntrySchema.validateAsync(product);
+        db.collection('products').insertOne(product);
+        const products = await db.collection('products').find().toArray();
+        res.status(201).send(products);
+    } catch (error) {
+        res.status(422).send(error.details.map((detail) => detail.message));
+    }
+});
+
+server.delete('/products', async (req, res) => {
+    await db.collection('products').deleteOne({ _id: ObjectId("6322f6ef21c80a6290ddb861") });
+    const products = await db.collection('products').find().toArray();
+    res.send(products);
+});
+
+server.delete('/deleteallusers', async (req, res) => {
+    await db.collection('users').deleteMany({});
+    const users = await db.collection('users').find().toArray();
+    res.send(users);
+});
+
+////////// Server listen //////////
 server.listen(port, () => {
     console.log("Server running on port " + port);
 });
