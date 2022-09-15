@@ -62,6 +62,31 @@ server.get('/', async (req, res) => {
     }
 });
 
+server.get("/maisvendidos", async (req, res) => {
+    const { authorization } = req.headers
+    const token = authorization?.replace('Bearer ', '')
+    
+    if(!token) return res.sendStatus(401)
+    
+    const sessao = await db.collection("sessions").findOne({ token })
+
+    if(!sessao) return res.sendStatus(401)
+
+    const usuario = await db.collection("users").findOne({
+        _id: sessao.userId
+    })
+
+    if(usuario){
+
+        const registros = await db.collection("bestsellers").find({}).toArray()
+
+        return res.status(200).send({registros, usuario})
+    }else{
+        return res.sendStatus(401)
+    }
+})
+
 server.listen(port, () => {
     console.log("Server running on port " + port);
 });
+
