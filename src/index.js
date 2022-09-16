@@ -8,7 +8,11 @@ import signup from "./routers/signuplogin.routers.js";
 import login from "./routers/signuplogin.routers.js";
 import products from "./routers/products.routers.js";
 import addcart from "./routers/products.routers.js";
-import { ObjectId } from "mongodb";
+import maisvendidos from "./routers/products.routers.js";
+import getcart from "./routers/products.routers.js";
+import removefromcart from "./routers/products.routers.js";
+import emptycart from "./routers/products.routers.js";
+import { ObjectId, ServerType } from "mongodb";
 
 const server = express();
 const port = process.env.PORT || 5000;
@@ -32,6 +36,18 @@ server.use(products);
 //Add to cart
 server.use(addcart);
 
+//Get Cart
+server.use(getcart);
+
+//Best Sellers - Mais vendidos
+server.use(maisvendidos);
+
+//Remove From Cart
+server.use(removefromcart);
+
+//Empty Cart
+server.use(emptycart);
+
 ////////// Internal //////////
 server.get('/sessions', async (req, res) => {
     try {
@@ -51,30 +67,6 @@ server.get('/', async (req, res) => {
     }
 });
 
-server.get("/maisvendidos", async (req, res) => {
-    const { authorization } = req.headers
-    const token = authorization?.replace('Bearer ', '')
-    
-    if(!token) return res.sendStatus(401)
-    
-    const sessao = await db.collection("sessions").findOne({ token })
-
-    if(!sessao) return res.sendStatus(401)
-
-    const usuario = await db.collection("users").findOne({
-        _id: sessao.userId
-    })
-
-    if(usuario){
-
-        const registros = await db.collection("bestsellers").find({}).toArray()
-
-        return res.status(200).send({registros, usuario})
-    }else{
-        return res.sendStatus(401)
-    }
-})
-
 // Product Register //
 const productEntrySchema = Joi.object({
     name: Joi.string().empty().required(),
@@ -90,7 +82,7 @@ server.post('/products', async (req, res) => {
             name: "Barriga em látex Premium Taubatende",
             description: "Barriga falsa premium totalmente feita em látex com sensação de pele ao toque, na cor bege. Modelo T212",
             image: "https://image.dhgate.com/0x0/f2/albu/g7/M00/EB/B1/rBVaSVripdSAQFnJAAEe0iY-JdA332.jpg",
-            price: 489.99,
+            price: 0,
             type: "latex"
         };
         await productEntrySchema.validateAsync(product);
@@ -103,7 +95,7 @@ server.post('/products', async (req, res) => {
 });
 
 server.delete('/products', async (req, res) => {
-    await db.collection('products').deleteOne({ _id: ObjectId("6322f6ef21c80a6290ddb861") });
+    await db.collection('products').deleteOne({ _id: ObjectId("6323ca8dbd9302a05c209aa0") });
     const products = await db.collection('products').find().toArray();
     res.send(products);
 });
