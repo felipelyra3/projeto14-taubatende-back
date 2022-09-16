@@ -79,11 +79,11 @@ const productEntrySchema = Joi.object({
 server.post('/products', async (req, res) => {
     try {
         const product = {
-            name: "Barriga em látex Premium Taubatende",
-            description: "Barriga falsa premium totalmente feita em látex com sensação de pele ao toque, na cor bege. Modelo T212",
+            name: "Barriga em Pano Premium Taubatende2",
+            description: "Barriga falsa premium totalmente feita em gel com sensação de pele ao toque, na cor bege. Modelo T212",
             image: "https://image.dhgate.com/0x0/f2/albu/g7/M00/EB/B1/rBVaSVripdSAQFnJAAEe0iY-JdA332.jpg",
-            price: 0,
-            type: "latex"
+            price: 250.00,
+            type: "gel"
         };
         await productEntrySchema.validateAsync(product);
         db.collection('products').insertOne(product);
@@ -105,6 +105,84 @@ server.delete('/deleteallusers', async (req, res) => {
     const users = await db.collection('users').find().toArray();
     res.send(users);
 });
+
+server.put("/configuser", async (req, res) => {
+    const { authorization } = req.headers
+    const token = authorization?.replace('Bearer ', '')
+    let { email, avatar, name, password } = req.body
+
+    if(!email && !avatar && !name && !password ) res.sendStatus(400)
+    
+    if (!token) return res.sendStatus(401)
+
+    const sessao = await db.collection("sessions").findOne({ token })
+
+    if (!sessao) return res.sendStatus(401)
+
+    const usuario = await db.collection("users").findOne({
+        _id: sessao.userId
+    })
+
+    if (usuario) {
+
+        if(!email){
+            if(avatar === "") avatar = usuario.avatar
+            if(name === "") name = usuario.name
+            if(password === "") password = usuario.password
+            await db.collection("users").updateOne({ 
+                _id: usuario._id 
+            }, { $set: {avatar, name, password} })
+            return res.sendStatus(200)
+        }
+    
+        else if(!avatar){
+            if(email === "") email = usuario.email
+            if(name === "") name = usuario.name
+            if(password === "") password = usuario.password
+            await db.collection("users").updateOne({ 
+                _id: usuario._id 
+            }, { $set: {email, name, password} })
+            return res.sendStatus(200)
+        }
+    
+        else if(!name){
+            if(email === "") email = usuario.email
+            if(avatar === "") avatar = usuario.avatar
+            if(password === "") password = usuario.password
+            await db.collection("users").updateOne({ 
+                _id: usuario._id 
+            }, { $set: {email, avatar, password} })
+            return res.sendStatus(200)
+        }
+    
+        else if(!password ){
+            if(email === "") email = usuario.email
+            if(avatar === "") avatar = usuario.avatar
+            if(name === "") name = usuario.name
+            
+            await db.collection("users").updateOne({ 
+                _id: usuario._id 
+            }, { $set: {email, avatar, name} })
+            return res.sendStatus(200)
+        }
+        else{
+            await db.collection("users").updateOne({ 
+                _id: usuario._id 
+            }, { $set: {email, avatar, name, password} })
+            return res.sendStatus(200)
+        }
+        
+    } else {
+        return res.sendStatus(401)
+    }
+
+    
+
+    
+
+    
+    
+})
 
 ////////// Server listen //////////
 server.listen(port, () => {
