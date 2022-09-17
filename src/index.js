@@ -68,6 +68,10 @@ server.get('/', async (req, res) => {
     }
 });
 
+server.get('/heroku', async (req, res) => {
+    res.send('Herokuuuuuu');
+});
+
 // Product Register //
 const productEntrySchema = Joi.object({
     name: Joi.string().empty().required(),
