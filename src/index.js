@@ -230,6 +230,28 @@ server.put("/configuser", async (req, res) => {
 
 })
 
+server.delete("/logout", async (req, res) => {
+    const { authorization } = req.headers
+    const token = authorization?.replace('Bearer ', '')
+    
+    if(!token) return res.sendStatus(401)
+    
+    const sessao = await db.collection("sessions").findOne({ token })
+
+    if(!sessao) return res.sendStatus(402)
+
+    const usuario = await db.collection("users").findOne({
+        _id: sessao.userId
+    })
+    
+    if(usuario){
+        await db.collection("sessions").deleteMany({userId: usuario._id})
+        return res.status(200).send()
+    }else{
+        return res.sendStatus(403)
+    }
+})
+
 ////////// Server listen //////////
 server.listen(port, () => {
     console.log("Server running on port " + port);
