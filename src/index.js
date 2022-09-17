@@ -3,6 +3,7 @@ import cors from "cors";
 import Joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from 'uuid';
+import dayjs from "dayjs";
 import db from "./database/db.js";
 import signup from "./routers/signuplogin.routers.js";
 import login from "./routers/signuplogin.routers.js";
@@ -104,6 +105,47 @@ server.delete('/deleteallusers', async (req, res) => {
     await db.collection('users').deleteMany({});
     const users = await db.collection('users').find().toArray();
     res.send(users);
+});
+
+server.post('/test', async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+        res.status(401).send('Token not found');
+        return;
+    }
+
+    try {
+        const session = await db.collection('sessions').findOne({ token });
+        const user = await db.collection('users').findOne({ _id: session.userId });
+
+        if (!user) {
+            res.status(401).send('User not found');
+            return;
+        }
+
+        const body = {
+            userId: user._id,
+            name: user.name,
+            email: user.email,
+            date: dayjs().format('YYYY/MM/DD'),
+            time: dayjs().format('HH:mm:ss'),
+            cart: user.cart
+        };
+
+        res.send(body);
+    } catch (error) {
+        res.send(error);
+    }
+});
+
+server.get('/finishedpurchases', async (req, res) => {
+    try {
+        const finishedPurchases = await db.collection('finishedpurchases').find().toArray();
+        res.send(finishedPurchases);
+    } catch (error) {
+        res.send(error);
+    }
 });
 
 ////////// Server listen //////////

@@ -1,5 +1,6 @@
 import db from "../database/db.js";
 import Joi from "joi";
+import dayjs from "dayjs";
 import { ObjectId } from "mongodb";
 
 
@@ -10,6 +11,13 @@ const idAddCartSchema = Joi.object({
 
 const idRemoveCart = Joi.object({
     id: Joi.string().empty().required()
+});
+
+const emptyCartSchema = Joi.object({
+    cardName: Joi.string().empty().required(),
+    cardNumber: Joi.string().alphanum().empty().required(),
+    cardSecureCode: Joi.string().alphanum().empty().required(),
+    totalPurchase: Joi.number().empty().required()
 });
 
 ////////// Get Products //////////
@@ -93,6 +101,22 @@ async function EmptyCart(req, res) {
             return;
         }
 
+        await emptyCartSchema.validateAsync(req.body);
+
+        const body = {
+            userId: user._id,
+            name: user.name,
+            email: user.email,
+            date: dayjs().format('YYYY/MM/DD'),
+            time: dayjs().format('HH:mm:ss'),
+            cart: user.cart,
+            cardName: req.body.cardName,
+            cardNumber: req.body.cardNumber,
+            cardSecureCode: req.body.cardSecureCode,
+            totalPurchase: req.body.totalPurchase
+        };
+
+        await db.collection('finishedpurchases').insertOne(body);
         await db.collection('users').updateOne({ _id: session.userId }, { $pull: { cart: {} } });
 
         const user2 = await db.collection('users').findOne({ _id: session.userId });
