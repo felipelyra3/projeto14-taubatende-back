@@ -3,6 +3,7 @@ import Joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from 'uuid';
 
+////////// Schemas //////////
 const usersSchema = Joi.object({
     name: Joi.string().min(3).max(24).empty().required(),
     avatar: Joi.string().uri().required(),
@@ -15,6 +16,7 @@ const usersLoginSchema = Joi.object({
     password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required()
 });
 
+////////// SigUp //////////
 async function SignUp(req, res) {
     try {
         const search = await db.collection('users').find().toArray();
@@ -48,6 +50,7 @@ async function SignUp(req, res) {
     }
 }
 
+////////// Login //////////
 async function Login(req, res) {
     const user = await db.collection('users').findOne({ email: req.body.email });
     if (!user) {
@@ -70,4 +73,99 @@ async function Login(req, res) {
     }
 }
 
-export { SignUp, Login };
+////////// Update User //////////
+async function ConfigUser(req, res) {
+    const { authorization } = req.headers
+    const token = authorization?.replace('Bearer ', '')
+    let { email, avatar, name, password } = req.body
+
+    if (!email && !avatar && !name && !password) res.sendStatus(400)
+
+    if (!token) return res.sendStatus(401)
+
+    const sessao = await db.collection("sessions").findOne({ token })
+
+    if (!sessao) return res.sendStatus(401)
+
+    const usuario = await db.collection("users").findOne({
+        _id: sessao.userId
+    })
+
+    if (usuario) {
+
+        if (!email) {
+            if (avatar === "") avatar = usuario.avatar
+            if (name === "") name = usuario.name
+            if (password === "") password = usuario.password
+            await db.collection("users").updateOne({
+                _id: usuario._id
+            }, { $set: { avatar, name, password } })
+            return res.sendStatus(200)
+        }
+
+        else if (!avatar) {
+            if (email === "") email = usuario.email
+            if (name === "") name = usuario.name
+            if (password === "") password = usuario.password
+            await db.collection("users").updateOne({
+                _id: usuario._id
+            }, { $set: { email, name, password } })
+            return res.sendStatus(200)
+        }
+
+        else if (!name) {
+            if (email === "") email = usuario.email
+            if (avatar === "") avatar = usuario.avatar
+            if (password === "") password = usuario.password
+            await db.collection("users").updateOne({
+                _id: usuario._id
+            }, { $set: { email, avatar, password } })
+            return res.sendStatus(200)
+        }
+
+        else if (!password) {
+            if (email === "") email = usuario.email
+            if (avatar === "") avatar = usuario.avatar
+            if (name === "") name = usuario.name
+
+            await db.collection("users").updateOne({
+                _id: usuario._id
+            }, { $set: { email, avatar, name } })
+            return res.sendStatus(200)
+        }
+        else {
+            await db.collection("users").updateOne({
+                _id: usuario._id
+            }, { $set: { email, avatar, name, password } })
+            return res.sendStatus(200)
+        }
+
+    } else {
+        return res.sendStatus(401)
+    }
+}
+
+////////// LogOut //////////
+async function LogOut(req, res) {
+    const { authorization } = req.headers
+    const token = authorization?.replace('Bearer ', '')
+
+    if (!token) return res.sendStatus(401)
+
+    const sessao = await db.collection("sessions").findOne({ token })
+
+    if (!sessao) return res.sendStatus(402)
+
+    const usuario = await db.collection("users").findOne({
+        _id: sessao.userId
+    })
+
+    if (usuario) {
+        await db.collection("sessions").deleteMany({ userId: usuario._id })
+        return res.status(200).send()
+    } else {
+        return res.sendStatus(403)
+    }
+}
+
+export { SignUp, Login, ConfigUser, LogOut };

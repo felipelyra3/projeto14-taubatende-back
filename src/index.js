@@ -13,6 +13,8 @@ import maisvendidos from "./routers/products.routers.js";
 import getcart from "./routers/products.routers.js";
 import removefromcart from "./routers/products.routers.js";
 import emptycart from "./routers/products.routers.js";
+import configuser from "./routers/products.routers.js";
+import logout from "./routers/products.routers.js";
 import { ObjectId, ServerType } from "mongodb";
 
 const server = express();
@@ -49,11 +51,27 @@ server.use(removefromcart);
 //Empty Cart
 server.use(emptycart);
 
+//Update User
+server.use(configuser);
+
+//LogOut
+server.use(logout);
+
 ////////// Internal //////////
 server.get('/sessions', async (req, res) => {
     try {
         const search = await db.collection('sessions').find().toArray();
         res.send(search);
+    } catch (error) {
+        res.send(error);
+    }
+});
+
+server.delete('/deleteallsessions', async (req, res) => {
+    try {
+        await db.collection('sessions').deleteMany({});
+        const session = db.collection('sessions').find().toArray();
+        res.send(session);
     } catch (error) {
         res.send(error);
     }
@@ -151,106 +169,6 @@ server.get('/finishedpurchases', async (req, res) => {
         res.send(error);
     }
 });
-
-server.put("/configuser", async (req, res) => {
-    const { authorization } = req.headers
-    const token = authorization?.replace('Bearer ', '')
-    let { email, avatar, name, password } = req.body
-
-    if (!email && !avatar && !name && !password) res.sendStatus(400)
-
-    if (!token) return res.sendStatus(401)
-
-    const sessao = await db.collection("sessions").findOne({ token })
-
-    if (!sessao) return res.sendStatus(401)
-
-    const usuario = await db.collection("users").findOne({
-        _id: sessao.userId
-    })
-
-    if (usuario) {
-
-        if (!email) {
-            if (avatar === "") avatar = usuario.avatar
-            if (name === "") name = usuario.name
-            if (password === "") password = usuario.password
-            await db.collection("users").updateOne({
-                _id: usuario._id
-            }, { $set: { avatar, name, password } })
-            return res.sendStatus(200)
-        }
-
-        else if (!avatar) {
-            if (email === "") email = usuario.email
-            if (name === "") name = usuario.name
-            if (password === "") password = usuario.password
-            await db.collection("users").updateOne({
-                _id: usuario._id
-            }, { $set: { email, name, password } })
-            return res.sendStatus(200)
-        }
-
-        else if (!name) {
-            if (email === "") email = usuario.email
-            if (avatar === "") avatar = usuario.avatar
-            if (password === "") password = usuario.password
-            await db.collection("users").updateOne({
-                _id: usuario._id
-            }, { $set: { email, avatar, password } })
-            return res.sendStatus(200)
-        }
-
-        else if (!password) {
-            if (email === "") email = usuario.email
-            if (avatar === "") avatar = usuario.avatar
-            if (name === "") name = usuario.name
-
-            await db.collection("users").updateOne({
-                _id: usuario._id
-            }, { $set: { email, avatar, name } })
-            return res.sendStatus(200)
-        }
-        else {
-            await db.collection("users").updateOne({
-                _id: usuario._id
-            }, { $set: { email, avatar, name, password } })
-            return res.sendStatus(200)
-        }
-
-    } else {
-        return res.sendStatus(401)
-    }
-
-
-
-
-
-
-
-})
-
-server.delete("/logout", async (req, res) => {
-    const { authorization } = req.headers
-    const token = authorization?.replace('Bearer ', '')
-    
-    if(!token) return res.sendStatus(401)
-    
-    const sessao = await db.collection("sessions").findOne({ token })
-
-    if(!sessao) return res.sendStatus(402)
-
-    const usuario = await db.collection("users").findOne({
-        _id: sessao.userId
-    })
-    
-    if(usuario){
-        await db.collection("sessions").deleteMany({userId: usuario._id})
-        return res.status(200).send()
-    }else{
-        return res.sendStatus(403)
-    }
-})
 
 ////////// Server listen //////////
 server.listen(port, () => {
