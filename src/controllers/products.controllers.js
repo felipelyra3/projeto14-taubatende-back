@@ -17,7 +17,11 @@ const emptyCartSchema = Joi.object({
     cardName: Joi.string().empty().required(),
     cardNumber: Joi.string().alphanum().empty().required(),
     cardSecureCode: Joi.string().alphanum().empty().required(),
-    totalPurchase: Joi.number().empty().required()
+    totalPurchase: Joi.number().empty().required(),
+    address: Joi.string().empty().required(),
+    neighborhood: Joi.string().empty().required(),
+    city: Joi.string().empty().required(),
+    state: Joi.string().empty().required()
 });
 
 ////////// Get Products //////////
@@ -113,7 +117,11 @@ async function EmptyCart(req, res) {
             cardName: req.body.cardName,
             cardNumber: req.body.cardNumber,
             cardSecureCode: req.body.cardSecureCode,
-            totalPurchase: req.body.totalPurchase
+            totalPurchase: req.body.totalPurchase,
+            address: req.body.address,
+            neighborhood: req.body.neighborhood,
+            city: req.body.city,
+            state: req.body.state
         };
 
         await db.collection('finishedpurchases').insertOne(body);
