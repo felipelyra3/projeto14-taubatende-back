@@ -58,7 +58,7 @@ server.use(configuser);
 server.use(logout);
 
 ////////// Internal //////////
-server.get('/sessions', async (req, res) => {
+/* server.get('/sessions', async (req, res) => {
     try {
         const search = await db.collection('sessions').find().toArray();
         res.send(search);
@@ -189,7 +189,7 @@ server.get('/finishedpurchases', async (req, res) => {
     } catch (error) {
         res.send(error);
     }
-});
+}); */
 
 ////////// Server listen //////////
 server.listen(port, () => {
