@@ -101,12 +101,13 @@ const productEntrySchema = Joi.object({
 
 server.post('/products', async (req, res) => {
     try {
+        productEntrySchema.validateAsync(req.body);
         const product = {
-            name: "Barriga de Pano 2000",
-            description: "Barriguinha de pano confortável e maleável",
-            image: "https://img.misterius.pt/resources/BARRIGA-FALSA-GRANDE_l.PNG",
-            price: 299.99,
-            type: "fabric"
+            name: req.body.name,
+            description: req.body.description,
+            image: req.body.image,
+            price: req.body.price,
+            type: req.body.type
         };
         await productEntrySchema.validateAsync(product);
         db.collection('products').insertOne(product);
@@ -118,7 +119,8 @@ server.post('/products', async (req, res) => {
 });
 
 server.delete('/products', async (req, res) => {
-    await db.collection('products').deleteOne({ _id: ObjectId("6323ca8dbd9302a05c209aa0") });
+    //await db.collection('products').deleteOne({ _id: ObjectId("6323ca8dbd9302a05c209aa0") });
+    await db.collection('products').deleteOne({ _id: req.body.id });
     const products = await db.collection('products').find().toArray();
     res.send(products);
 });
