@@ -102,11 +102,11 @@ const productEntrySchema = Joi.object({
 server.post('/products', async (req, res) => {
     try {
         const product = {
-            name: "Barriga em Pano Premium Taubatende2",
-            description: "Barriga falsa premium totalmente feita em gel com sensação de pele ao toque, na cor bege. Modelo T212",
-            image: "https://image.dhgate.com/0x0/f2/albu/g7/M00/EB/B1/rBVaSVripdSAQFnJAAEe0iY-JdA332.jpg",
-            price: 250.00,
-            type: "gel"
+            name: "Barriga de Pano 2000",
+            description: "Barriguinha de pano confortável e maleável",
+            image: "https://img.misterius.pt/resources/BARRIGA-FALSA-GRANDE_l.PNG",
+            price: 299.99,
+            type: "fabric"
         };
         await productEntrySchema.validateAsync(product);
         db.collection('products').insertOne(product);
