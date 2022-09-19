@@ -118,6 +118,25 @@ server.post('/products', async (req, res) => {
     }
 });
 
+server.post('/bestsellers', async (req, res) => {
+    try {
+        productEntrySchema.validateAsync(req.body);
+        const product = {
+            name: req.body.name,
+            description: req.body.description,
+            image: req.body.image,
+            price: req.body.price,
+            type: req.body.type
+        };
+        await productEntrySchema.validateAsync(product);
+        db.collection('bestsellers').insertOne(product);
+        const products = await db.collection('bestsellers').find().toArray();
+        res.status(201).send(products);
+    } catch (error) {
+        res.status(422).send(error.details.map((detail) => detail.message));
+    }
+});
+
 server.delete('/products', async (req, res) => {
     //await db.collection('products').deleteOne({ _id: ObjectId("6323ca8dbd9302a05c209aa0") });
     await db.collection('products').deleteOne({ _id: req.body.id });
